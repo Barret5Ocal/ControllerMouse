@@ -229,10 +229,11 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExA(
-                WS_EX_TOPMOST,//|WS_EX_LAYERED,
+                WS_EX_TOPMOST|WS_EX_LAYERED|WS_EX_TRANSPARENT,
                 WindowClass.lpszClassName,
                 "XboxOneMouse",
-                WS_OVERLAPPEDWINDOW|WS_VISIBLE,
+                //WS_OVERLAPPEDWINDOW|
+                WS_VISIBLE|WS_POPUP,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -287,7 +288,7 @@ WinMain(HINSTANCE Instance,
             Config->RightStick = DEL;
             Config->Back = ESC;
             
-            ShowWindow(Window, SW_HIDE);
+            //ShowWindow(Window, SW_SHOW);
             
             LARGE_INTEGER LastCounter = Win32GetWallClock();
             LARGE_INTEGER FlipWallClock = Win32GetWallClock();
