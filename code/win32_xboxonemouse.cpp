@@ -14,6 +14,7 @@
 
 global_variable bool GlobalRunning;
 global_variable int64 GlobalPerfCountFrequency;
+global_variable win32_offscreen_buffer GlobalBackbuffer;
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -119,6 +120,93 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
     return(Result);
 }
 
+internal win32_window_dimension
+Win32GetWindowDimension(HWND Window)
+{
+    win32_window_dimension Result;
+    
+    RECT ClientRect;
+    GetClientRect(Window, &ClientRect);
+    Result.Width = ClientRect.right - ClientRect.left;
+    Result.Height = ClientRect.bottom - ClientRect.top;
+
+    return(Result);
+}
+
+internal void
+Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
+{
+
+    // TODO(casey): Bulletproof this.
+    // Maybe don't free first, free after, then free first if that fails.
+
+    if(Buffer->Memory)
+    {
+        VirtualFree(Buffer->Memory, 0, MEM_RELEASE);
+    }
+
+    Buffer->Width = Width;
+    Buffer->Height = Height;
+
+    int BytesPerPixel = 4;
+    Buffer->BytesPerPixel = BytesPerPixel;
+
+    // NOTE(casey): When the biHeight field is negative, this is the clue to
+    // Windows to treat this bitmap as top-down, not bottom-up, meaning that
+    // the first three bytes of the image are the color for the top left pixel
+    // in the bitmap, not the bottom left!
+    Buffer->Info.bmiHeader.biSize = sizeof(Buffer->Info.bmiHeader);
+    Buffer->Info.bmiHeader.biWidth = Buffer->Width;
+    Buffer->Info.bmiHeader.biHeight = -Buffer->Height;
+    Buffer->Info.bmiHeader.biPlanes = 1;
+    Buffer->Info.bmiHeader.biBitCount = 32;
+    Buffer->Info.bmiHeader.biCompression = BI_RGB;
+
+    // NOTE(casey): Thank you to Chris Hecker of Spy Party fame
+    // for clarifying the deal with StretchDIBits and BitBlt!
+    // No more DC for us.
+    int BitmapMemorySize = (Buffer->Width*Buffer->Height)*BytesPerPixel;
+    Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    Buffer->Pitch = Width*BytesPerPixel;
+
+    // TODO(casey): Probably clear this to black
+}
+
+internal void
+Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
+                           HDC DeviceContext, int WindowWidth, int WindowHeight)
+{
+    if((WindowWidth >= Buffer->Width * 2) &&
+       (WindowHeight >= Buffer->Height * 2))
+    {
+        StretchDIBits(DeviceContext,
+                      0, 0, 2 * Buffer->Width, 2 * Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS, SRCCOPY);        
+    }
+    else
+    {
+        int OffsetX = 10;
+        int OffsetY = 10;
+
+        PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+        PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+        PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+        PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+        // NOTE(casey): For prototyping purposes, we're going to always blit
+        // 1-to-1 pixels to make sure we don't introduce artifacts with
+        // stretching while we are learning to code the renderer!
+        StretchDIBits(DeviceContext,
+                      OffsetX, OffsetY, Buffer->Width, Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS, SRCCOPY);
+    }
+}
+
 LRESULT CALLBACK
 Win32MainWindowCallback(HWND Window,
                         UINT Message,
@@ -159,7 +247,15 @@ Win32MainWindowCallback(HWND Window,
             // TODO(casey): Handle this as an error - recreate window?
             GlobalRunning = false;
         } break;
-
+        case WM_PAINT:
+        {
+            PAINTSTRUCT Paint;
+            HDC DeviceContext = BeginPaint(Window, &Paint);
+            win32_window_dimension Dimension = Win32GetWindowDimension(Window);
+            Win32DisplayBufferInWindow(&GlobalBackbuffer, DeviceContext,
+                                       Dimension.Width, Dimension.Height);
+            EndPaint(Window, &Paint);
+        } break;
         case WM_SYSKEYDOWN:
         case WM_SYSKEYUP:
         case WM_KEYDOWN:
@@ -218,6 +314,9 @@ WinMain(HINSTANCE Instance,
 
     UINT DesiredSchedulerMS = 1;
     bool32 SleepIsGranular = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
+
+    // NOTE(barret): 1080p display mode is 1920x1080 -> Half of that is 960x540
+    Win32ResizeDIBSection(&GlobalBackbuffer, 960, 540);
     
     WNDCLASSA WindowClass = {};
     
@@ -229,11 +328,12 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExA(
-                WS_EX_TOPMOST|WS_EX_LAYERED|WS_EX_TRANSPARENT,
+                0, //WS_EX_TOPMOST|WS_EX_LAYERED|WS_EX_TRANSPARENT,
                 WindowClass.lpszClassName,
                 "XboxOneMouse",
                 //WS_OVERLAPPEDWINDOW|
-                WS_VISIBLE|WS_POPUP,
+                //WS_VISIBLE|WS_POPUP
+                WS_OVERLAPPEDWINDOW|WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -523,7 +623,13 @@ WinMain(HINSTANCE Instance,
                     // TODO(casey): MISSED FRAME RATE!
                     // TODO(casey): Logging
                 }
-                
+
+                win32_window_dimension Dimension = Win32GetWindowDimension(Window);
+                HDC DeviceContext = GetDC(Window);
+                Win32DisplayBufferInWindow(&GlobalBackbuffer, DeviceContext,
+                                           Dimension.Width, Dimension.Height);
+                ReleaseDC(Window, DeviceContext);
+                        
                 LARGE_INTEGER EndCounter = Win32GetWallClock();
                 real32 MSPerFrame = 1000.0f*Win32GetSecondsElapsed(LastCounter, EndCounter);                    
                 LastCounter = EndCounter;
