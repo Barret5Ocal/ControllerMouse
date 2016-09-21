@@ -7,6 +7,7 @@
    $Notice: (C) Copyright 2015 by Barret Gaylor. All Rights Reserved. $
    ======================================================================== */
 
+#include "xboxonemouse_intrinsics.h"
 #include "xboxonemouse_math.h"
 
 enum character
@@ -160,6 +161,17 @@ struct state
     controller_config Config;
     commands Commands;
 };
+
+#define BITMAP_BYTES_PER_PIXEL 4
+typedef struct game_offscreen_buffer
+{
+    // NOTE(casey): Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
+    void *Memory;
+    int Width;
+    int Height;
+    int Pitch;
+    int BytesPerPixel;
+} game_offscreen_buffer;
 
 #define XBOXONEMOUSE_H
 #endif

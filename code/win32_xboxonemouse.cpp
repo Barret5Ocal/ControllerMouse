@@ -554,13 +554,20 @@ WinMain(HINSTANCE Instance,
                         NewController->IsConnected = false;
                     }
                 }
+
+                game_offscreen_buffer Buffer = {};
+                Buffer.Memory = GlobalBackbuffer.Memory;
+                Buffer.Width = GlobalBackbuffer.Width; 
+                Buffer.Height = GlobalBackbuffer.Height;
+                Buffer.Pitch = GlobalBackbuffer.Pitch;
+                Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
                 
                 POINT Point = {};
                 GetCursorPos(&Point);
 
                 v2 MousePos = {(real32)Point.x, (real32)Point.y};
                 
-                Update(&State, Config, NewInput, MousePos);
+                Update(&State, Config, NewInput, MousePos, Buffer);
                 
                 SetCursorPos(Commands->MousePos.X, Commands->MousePos.Y);
                 GetCursorPos(&Point);

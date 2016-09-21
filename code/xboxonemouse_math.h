@@ -157,6 +157,5 @@ Min(real32 A, real32 B)
     
 }
 
-
 #define XBOXONEMOUSE_MATH_H
 #endif

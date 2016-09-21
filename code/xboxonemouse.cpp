@@ -128,7 +128,65 @@ ButtonUp(commands *Commands, game_button_state *State, function Type)
 }
 
 internal void
-Update(state *State, controller_config *Config, game_input *Input, v2 MousePos)
+DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
+              real32 R, real32 G, real32 B)
+{
+
+    int32 MinX = RoundReal32ToInt32(Min.X);
+    int32 MinY = RoundReal32ToInt32(Min.Y);
+    int32 MaxX = RoundReal32ToInt32(Max.X);
+    int32 MaxY = RoundReal32ToInt32(Max.Y); 
+
+    int32 SourceOffsetX = 0;
+    if(MinX < 0)
+    {
+        SourceOffsetX = -MinX;
+        MinX = 0;
+    }
+
+    int32 SourceOffsetY = 0;
+    if(MinY < 0)
+    {
+        SourceOffsetY = -MinY;
+        MinY = 0; 
+    }
+
+    if(MaxX > Buffer->Width)
+    {
+        MaxX = Buffer->Width;
+    }
+
+    if(MaxY > Buffer->Height)
+    {
+        MaxY = Buffer->Height; 
+    }
+
+    uint32 Color32 = ((RoundReal32ToUInt32(A * 255.0f) << 24) |
+                      (RoundReal32ToUInt32(R * 255.0f) << 16) |
+                      (RoundReal32ToUInt32(G * 255.0f) << 8) |
+                      (RoundReal32ToUInt32(B * 255.0f) << 0));
+
+    uint8 *Row = ((uint8 *)Buffer->Memory +
+        MinX*BITMAP_BYTES_PER_PIXEL +
+        MinY*Buffer->Pitch); 
+    for(int32 Y = MinY;
+        Y < MaxY;
+        ++Y)
+    {
+        uint32 *Pixel = (uint32 *)Row;
+        for(int32 X = MinX;
+            X < MaxX;
+            ++X)
+        {
+            *Pixel++ = Color32; 
+        }
+
+        Row += Buffer->Pitch; 
+    }
+}
+
+internal void
+Update(state *State, controller_config *Config, game_input *Input, v2 MousePos, game_offscreen_buffer Buffer)
 {
     commands *Commands = &State->Commands;
     int32 ButtonComandsIndex = 0;
