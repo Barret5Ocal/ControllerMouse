@@ -186,7 +186,8 @@ DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
 }
 
 internal void
-Update(state *State, controller_config *Config, game_input *Input, v2 MousePos, game_offscreen_buffer Buffer)
+Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
+       game_offscreen_buffer *Buffer)
 {
     commands *Commands = &State->Commands;
     int32 ButtonComandsIndex = 0;
@@ -378,4 +379,6 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos, 
             }
         }    
     }
+
+    DrawRectangle(Buffer, v2{100, 100}, v2{400, 400}, 1.0f, 1.0f, 0.0f);
 }

@@ -331,8 +331,6 @@ WinMain(HINSTANCE Instance,
                 0, //WS_EX_TOPMOST|WS_EX_LAYERED|WS_EX_TRANSPARENT,
                 WindowClass.lpszClassName,
                 "XboxOneMouse",
-                //WS_OVERLAPPEDWINDOW|
-                //WS_VISIBLE|WS_POPUP
                 WS_OVERLAPPEDWINDOW|WS_VISIBLE,
                 CW_USEDEFAULT,
                 CW_USEDEFAULT,
@@ -567,7 +565,7 @@ WinMain(HINSTANCE Instance,
 
                 v2 MousePos = {(real32)Point.x, (real32)Point.y};
                 
-                Update(&State, Config, NewInput, MousePos, Buffer);
+                Update(&State, Config, NewInput, MousePos, &Buffer);
                 
                 SetCursorPos(Commands->MousePos.X, Commands->MousePos.Y);
                 GetCursorPos(&Point);
