@@ -10,6 +10,17 @@
 #include "xboxonemouse_intrinsics.h"
 #include "xboxonemouse_math.h"
 
+
+struct loaded_bitmap
+{
+    void *Pixels;
+    int32 Width;
+    int32 Height;
+};
+
+
+#include "xboxonemouse_stb.h"
+
 enum character
 {
     A = 0x41,
