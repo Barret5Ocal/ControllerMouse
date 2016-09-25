@@ -171,6 +171,9 @@ struct state
     char CharToType; 
     controller_config Config;
     commands Commands;
+
+
+    loaded_bitmap AButton; 
 };
 
 #define BITMAP_BYTES_PER_PIXEL 4

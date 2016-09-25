@@ -186,6 +186,19 @@ DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
 }
 
 internal void
+DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, v2 Min, v2 Max)
+{
+    //TODO(barret): fill out 
+    
+}
+
+internal void
+StartUp(state *State, controller_config *Config)
+{
+    State->AButton = STBLoadMap("Abutton.png");
+}
+
+internal void
 Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
        game_offscreen_buffer *Buffer)
 {

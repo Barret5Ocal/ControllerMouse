@@ -393,6 +393,7 @@ WinMain(HINSTANCE Instance,
 
             uint64 LastCycleCount = __rdtsc();
 
+            StartUp(&State, Config);
             
             while(GlobalRunning)
             {
