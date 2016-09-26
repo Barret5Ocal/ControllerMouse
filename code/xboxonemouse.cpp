@@ -186,10 +186,63 @@ DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
 }
 
 internal void
-DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, v2 Min, v2 Max)
+DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, real32 RealY)
 {
-    //TODO(barret): fill out 
-    
+    //TODO(barret): fill out
+
+    int32 MinX = RoundReal32ToInt32(RealX);
+    int32 MinY = RoundReal32ToInt32(RealY);
+    int32 MaxX = MinX + Bitmap->Width;
+    int32 MaxY = MinY + Bitmap->Height; 
+
+    int32 SourceOffsetX = 0;
+    if(MinX < 0)
+    {
+        SourceOffsetX = -MinX;
+        MinX = 0;
+    }
+
+    int32 SourceOffsetY = 0;
+    if(MinY < 0)
+    {
+        SourceOffsetY = -MinY;
+        MinY = 0; 
+    }
+
+    if(MaxX > Buffer->Width)
+    {
+        MaxX = Buffer->Width;
+    }
+
+    if(MaxY > Buffer->Height)
+    {
+        MaxY = Buffer->Height; 
+    }
+
+    uint8 *SourceRow = (uint8 *)Bitmap->Memory +
+        SourceOffsetY*Bitmap->Pitch +
+        SourceOffsetX*BITMAP_BYTES_PER_PIXEL;
+    uint8 *DestRow = (uint8 *)Buffer->Memory +
+        MinX*BITMAP_BYTES_PER_PIXEL +
+        MinY*Buffer->Pitch;
+
+    for (int32 Y = MinY;
+         Y < MaxY;
+         ++Y)
+    {
+        uint32 *Source = (uint32 *) SourceRow;
+        uint32 *Dest = (uint32 *) DestRow; 
+        for(int32 X = MinX;
+            X < MaxX;
+            ++X)
+        {
+            *Dest++ = *Source++; 
+        
+        }
+        
+        SourceRow += Bitmap->Pitch;
+        DestRow += Buffer->Pitch; 
+    }
 }
 
 internal void
@@ -393,5 +446,6 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
         }    
     }
 
-    DrawRectangle(Buffer, v2{100, 100}, v2{400, 400}, 1.0f, 1.0f, 0.0f);
+    //DrawRectangle(Buffer, v2{100, 100}, v2{400, 400}, 1.0f, 1.0f, 0.0f);
+    DrawBitmap(Buffer, &State->AButton, 100, 100);
 }

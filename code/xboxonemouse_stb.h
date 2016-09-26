@@ -20,8 +20,8 @@ STBLoadMap(char *Filename)
 
     Result.Width = X;
     Result.Height = Y;
-    Result.Pixels = Data; 
-
+    Result.Memory = Data; 
+    Result.Pitch = Result.Width*BITMAP_BYTES_PER_PIXEL;
     return(Result);
 }
 

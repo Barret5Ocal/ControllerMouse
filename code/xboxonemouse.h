@@ -10,12 +10,14 @@
 #include "xboxonemouse_intrinsics.h"
 #include "xboxonemouse_math.h"
 
+#define BITMAP_BYTES_PER_PIXEL 4
 
 struct loaded_bitmap
 {
-    void *Pixels;
     int32 Width;
     int32 Height;
+    int32 Pitch;
+    void *Memory;
 };
 
 
@@ -176,7 +178,7 @@ struct state
     loaded_bitmap AButton; 
 };
 
-#define BITMAP_BYTES_PER_PIXEL 4
+
 typedef struct game_offscreen_buffer
 {
     // NOTE(casey): Pixels are alwasy 32-bits wide, Memory Order BB GG RR XX
