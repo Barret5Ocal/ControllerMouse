@@ -236,8 +236,25 @@ DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, r
             X < MaxX;
             ++X)
         {
-            *Dest++ = *Source++; 
-        
+            real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
+            real32 SR = (real32)((*Source >> 16) & 0xFF);
+            real32 SG = (real32)((*Source >> 8) & 0xFF);
+            real32 SB = (real32)((*Source >> 0) & 0xFF);
+
+            real32 DR = (real32)((*Source >> 16) & 0xFF);
+            real32 DG = (real32)((*Source >> 8) & 0xFF);
+            real32 DB = (real32)((*Source >> 0) & 0xFF);
+
+            real32 R = (1.0f - A)*DR + A*SR;
+            real32 G = (1.0f - A)*DG + A*SG;
+            real32 B = (1.0f - A)*DB + A*SB;
+            
+            *Dest = (((uint32)(R + 0.5f) << 16) |
+                     ((uint32)(G + 0.5f) << 8) |
+                     ((uint32)(B + 0.5f) << 0)); 
+
+            ++Dest;
+            ++Source; 
         }
         
         SourceRow += Bitmap->Pitch;
