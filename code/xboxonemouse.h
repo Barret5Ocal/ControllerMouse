@@ -175,7 +175,11 @@ struct state
     commands Commands;
 
 
-    loaded_bitmap AButton; 
+    loaded_bitmap AButton;
+    loaded_bitmap BButton;
+    loaded_bitmap XButton;
+    loaded_bitmap YButton;
+    
 };
 
 

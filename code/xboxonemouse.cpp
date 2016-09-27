@@ -237,13 +237,13 @@ DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, r
             ++X)
         {
             real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
-            real32 SR = (real32)((*Source >> 16) & 0xFF);
+            real32 SB = (real32)((*Source >> 16) & 0xFF);
             real32 SG = (real32)((*Source >> 8) & 0xFF);
-            real32 SB = (real32)((*Source >> 0) & 0xFF);
+            real32 SR = (real32)((*Source >> 0) & 0xFF);
 
-            real32 DR = (real32)((*Source >> 16) & 0xFF);
-            real32 DG = (real32)((*Source >> 8) & 0xFF);
-            real32 DB = (real32)((*Source >> 0) & 0xFF);
+            real32 DR = (real32)((*Dest >> 16) & 0xFF);
+            real32 DG = (real32)((*Dest >> 8) & 0xFF);
+            real32 DB = (real32)((*Dest >> 0) & 0xFF);
 
             real32 R = (1.0f - A)*DR + A*SR;
             real32 G = (1.0f - A)*DG + A*SG;
@@ -266,6 +266,7 @@ internal void
 StartUp(state *State, controller_config *Config)
 {
     State->AButton = STBLoadMap("Abutton.png");
+    State->BButton = STBLoadMap("BButton.png");
 }
 
 internal void
@@ -463,6 +464,10 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
         }    
     }
 
-    //DrawRectangle(Buffer, v2{100, 100}, v2{400, 400}, 1.0f, 1.0f, 0.0f);
+    DrawRectangle(Buffer, v2{0, 0}, v2{(real32)Buffer->Width, (real32)Buffer->Height},
+                  1.0f, 1.0f, 1.0f);
+
     DrawBitmap(Buffer, &State->AButton, 100, 100);
+    DrawBitmap(Buffer, &State->BButton, 200, 100);
+    
 }
