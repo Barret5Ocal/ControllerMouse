@@ -20,6 +20,12 @@ struct loaded_bitmap
     void *Memory;
 };
 
+struct render_basis
+{
+    v2 Origin;
+    v2 IHat;
+    v2 JHat; 
+};
 
 #include "xboxonemouse_stb.h"
 
@@ -179,7 +185,7 @@ struct state
     loaded_bitmap BButton;
     loaded_bitmap XButton;
     loaded_bitmap YButton;
-    
+    loaded_bitmap StickUp; 
 };
 
 
