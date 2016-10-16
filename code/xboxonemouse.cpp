@@ -263,91 +263,41 @@ DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, r
 }
 
 internal void
-DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_basis ObjectBasis)
+StartUp(state *State, controller_config *Config, commands *Commands, int32 ScreenWidth, int32 ScreenHeight)
 {
-
-    // TODO(barret): add rotation and scale
-
-    int32 MinX = RoundReal32ToInt32(ObjectBasis.Origin.X);
-    int32 MinY = RoundReal32ToInt32(ObjectBasis.Origin.Y);
-    int32 MaxX = MinX + Bitmap->Width;
-    int32 MaxY = MinY + Bitmap->Height; 
-
-    int32 SourceOffsetX = 0;
-    if(MinX < 0)
+    for(int32 ButtonTypeIndex = 0;
+        ButtonTypeIndex <= ArrayCount(Commands->ButtonStates);
+        ++ButtonTypeIndex)
     {
-        SourceOffsetX = -MinX;
-        MinX = 0;
+        Commands->ButtonStates[ButtonTypeIndex].ButtonType = (function)ButtonTypeIndex; 
     }
+              
+    Config->MoveUp = ARROW_UP;
+    Config->MoveDown = ARROW_DOWN;
+    Config->MoveLeft = ARROW_LEFT;
+    Config->MoveRight = ARROW_RIGHT;
+    Config->ActionUp = CTR;
+    Config->ActionDown = SPACE;
+    Config->ActionLeft = SHIFT;
+    Config->ActionRight = ALT;
+    Config->LeftShoulder = MIDDLECLICK;
+    Config->RightShoulder = SPEED_BOOST;
+    Config->LeftTrigger = RIGHTCLICK;
+    Config->RightTrigger = LEFTCLICK;
+    Config->LeftStick = WINDOWS;
+    Config->RightStick = DEL;
+    Config->Back = ESC;
 
-    int32 SourceOffsetY = 0;
-    if(MinY < 0)
-    {
-        SourceOffsetY = -MinY;
-        MinY = 0; 
-    }
-
-    if(MaxX > Buffer->Width)
-    {
-        MaxX = Buffer->Width;
-    }
-
-    if(MaxY > Buffer->Height)
-    {
-        MaxY = Buffer->Height; 
-    }
-
-    uint8 *SourceRow = (uint8 *)Bitmap->Memory +
-        SourceOffsetY*Bitmap->Pitch +
-        SourceOffsetX*BITMAP_BYTES_PER_PIXEL;
-    uint8 *DestRow = (uint8 *)Buffer->Memory +
-        MinX*BITMAP_BYTES_PER_PIXEL +
-        MinY*Buffer->Pitch;
-
-    for (int32 Y = MinY;
-         Y < MaxY;
-         ++Y)
-    {
-        uint32 *Source = (uint32 *) SourceRow;
-        uint32 *Dest = (uint32 *) DestRow; 
-        for(int32 X = MinX;
-            X < MaxX;
-            ++X)
-        {
-            real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
-            real32 SB = (real32)((*Source >> 16) & 0xFF);
-            real32 SG = (real32)((*Source >> 8) & 0xFF);
-            real32 SR = (real32)((*Source >> 0) & 0xFF);
-
-            real32 DR = (real32)((*Dest >> 16) & 0xFF);
-            real32 DG = (real32)((*Dest >> 8) & 0xFF);
-            real32 DB = (real32)((*Dest >> 0) & 0xFF);
-
-            real32 R = (1.0f - A)*DR + A*SR;
-            real32 G = (1.0f - A)*DG + A*SG;
-            real32 B = (1.0f - A)*DB + A*SB;
-            
-            *Dest = (((uint32)(R + 0.5f) << 16) |
-                     ((uint32)(G + 0.5f) << 8) |
-                     ((uint32)(B + 0.5f) << 0)); 
-
-            ++Dest;
-            ++Source; 
-        }
-        
-        SourceRow += Bitmap->Pitch;
-        DestRow += Buffer->Pitch; 
-    }
-}
-
-internal void
-StartUp(state *State, controller_config *Config)
-{
+    State->ScreenDim = {(real32)ScreenWidth, (real32)ScreenHeight};
+    
     State->AButton = STBLoadMap("Abutton.png");
     State->BButton = STBLoadMap("BButton.png");
     State->XButton = STBLoadMap("XButton.png");
     State->YButton = STBLoadMap("YButton.png");
     State->StickUp = STBLoadMap("StickUp.png");
+    State->StickDown = STBLoadMap("StickDown.png");
+    State->StickRight = STBLoadMap("StickRight.png");
+    State->StickLeft = STBLoadMap("StickLeft.png");
 }
 
 internal void
@@ -545,6 +495,7 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
         }    
     }
 
+    // TODO(barret): draw interface for type mode 
     DrawRectangle(Buffer, v2{0, 0}, v2{(real32)Buffer->Width, (real32)Buffer->Height},
                   1.0f, 1.0f, 1.0f);
 
@@ -552,5 +503,6 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
     DrawBitmap(Buffer, &State->BButton, 200, 100);
     DrawBitmap(Buffer, &State->XButton, 300, 100);
     DrawBitmap(Buffer, &State->YButton, 400, 100);
-    DrawBitmap(Buffer, &State->StickUp, 500, 100);    
+    DrawBitmap(Buffer, &State->StickUp, 500, 100);
+
 }

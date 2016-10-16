@@ -328,7 +328,7 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExA(
-                0, //WS_EX_TOPMOST|WS_EX_LAYERED|WS_EX_TRANSPARENT,
+                WS_EX_TOPMOST,//|WS_EX_LAYERED, //|WS_EX_TRANSPARENT,
                 WindowClass.lpszClassName,
                 "XboxOneMouse",
                 WS_OVERLAPPEDWINDOW|WS_VISIBLE,
@@ -362,39 +362,23 @@ WinMain(HINSTANCE Instance,
 
             state State = {};
             commands *Commands = &State.Commands;
-            for(int32 ButtonTypeIndex = 0;
-                ButtonTypeIndex <= ArrayCount(Commands->ButtonStates);
-                ++ButtonTypeIndex)
-            {
-                Commands->ButtonStates[ButtonTypeIndex].ButtonType = (function)ButtonTypeIndex; 
-            }
+            controller_config *Config = &State.Config;
 
-            controller_config *Config = &State.Config;            
-            Config->MoveUp = ARROW_UP;
-            Config->MoveDown = ARROW_DOWN;
-            Config->MoveLeft = ARROW_LEFT;
-            Config->MoveRight = ARROW_RIGHT;
-            Config->ActionUp = CTR;
-            Config->ActionDown = SPACE;
-            Config->ActionLeft = SHIFT;
-            Config->ActionRight = ALT;
-            Config->LeftShoulder = MIDDLECLICK;
-            Config->RightShoulder = SPEED_BOOST;
-            Config->LeftTrigger = RIGHTCLICK;
-            Config->RightTrigger = LEFTCLICK;
-            Config->LeftStick = WINDOWS;
-            Config->RightStick = DEL;
-            Config->Back = ESC;
-            
-            //ShowWindow(Window, SW_SHOW);
-            
+            // NOTE(barret): Get screen width and height
+            HDC DC = GetDC(Window);
+            int32 ScreenWidth = GetDeviceCaps(DC, HORZRES);
+            int32 ScreenHeight = GetDeviceCaps(DC, VERTRES);
+            ReleaseDC(Window, DC);
+                    
             LARGE_INTEGER LastCounter = Win32GetWallClock();
             LARGE_INTEGER FlipWallClock = Win32GetWallClock();
 
             uint64 LastCycleCount = __rdtsc();
 
-            StartUp(&State, Config);
-            
+            StartUp(&State, Config, Commands, ScreenWidth, ScreenHeight);
+
+            MoveWindow(Window, 0, State.ScreenDim.Y*0.70f, State.ScreenDim.X, State.ScreenDim.Y*0.25f, 0); 
+              
             while(GlobalRunning)
             {
                 NewInput->dtForFrame = TargetSecondsPerFrame;

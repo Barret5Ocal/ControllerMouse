@@ -180,12 +180,16 @@ struct state
     controller_config Config;
     commands Commands;
 
+    v2 ScreenDim; 
 
     loaded_bitmap AButton;
     loaded_bitmap BButton;
     loaded_bitmap XButton;
     loaded_bitmap YButton;
-    loaded_bitmap StickUp; 
+    loaded_bitmap StickUp;
+    loaded_bitmap StickDown;
+    loaded_bitmap StickRight;
+    loaded_bitmap StickLeft;
 };
 
 
