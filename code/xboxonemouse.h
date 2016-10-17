@@ -181,6 +181,7 @@ struct state
     commands Commands;
 
     v2 ScreenDim; 
+	v2 ClientDim; 
 
     loaded_bitmap AButton;
     loaded_bitmap BButton;

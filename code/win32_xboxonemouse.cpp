@@ -120,6 +120,12 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
     return(Result);
 }
 
+internal void 
+Win32MoveWindow(HWND Window, real32 X, real32 Y, int32 Width, int32 Height)
+{
+	MoveWindow(Window, X, Y, Width, Height, 0);
+}
+
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window)
 {
@@ -314,9 +320,6 @@ WinMain(HINSTANCE Instance,
 
     UINT DesiredSchedulerMS = 1;
     bool32 SleepIsGranular = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
-
-    // NOTE(barret): 1080p display mode is 1920x1080 -> Half of that is 960x540
-    Win32ResizeDIBSection(&GlobalBackbuffer, 960, 540);
     
     WNDCLASSA WindowClass = {};
     
@@ -377,8 +380,12 @@ WinMain(HINSTANCE Instance,
 
             StartUp(&State, Config, Commands, ScreenWidth, ScreenHeight);
 
-            MoveWindow(Window, 0, State.ScreenDim.Y*0.70f, State.ScreenDim.X, State.ScreenDim.Y*0.25f, 0); 
-              
+			// NOTE(barret): setting up the client area of the window 
+            Win32MoveWindow(Window, 0.0f, State.ScreenDim.Y*0.70f, State.ScreenDim.X, State.ScreenDim.Y*0.25f); 
+            win32_window_dimension WindowDim = Win32GetWindowDimension(Window);
+			State.ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
+			Win32ResizeDIBSection(&GlobalBackbuffer, State.ClientDim.X, State.ClientDim.Y);
+			
             while(GlobalRunning)
             {
                 NewInput->dtForFrame = TargetSecondsPerFrame;
