@@ -120,10 +120,24 @@ Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
     return(Result);
 }
 
+internal void
+Win32ToggleWindowVisablity(HWND Window, bool32 ToggleTo)
+{
+
+    if(ToggleTo)
+    {
+        ShowWindow(Window, SW_SHOW);        
+    }
+    else
+    {
+        ShowWindow(Window, SW_HIDE);        
+    }
+}
+
 internal void 
 Win32MoveWindow(HWND Window, real32 X, real32 Y, int32 Width, int32 Height)
 {
-	MoveWindow(Window, X, Y, Width, Height, 0);
+    MoveWindow(Window, X, Y, Width, Height, 0);
 }
 
 internal win32_window_dimension
@@ -301,11 +315,19 @@ Win32MainWindowCallback(HWND Window,
 }
 
 internal void
-Win32InitializeMenu(HWND Window)
+Win32InitializeDefaultMode(HWND Window, state *State)
 {
-    SetWindowLong(Window, GWL_EXSTYLE, 0);//WS_EX_TOPMOST|WS_EX_LAYERED);
-    //SetWindowPos(Window, HWND_TOPMOST, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, SWP_SHOWWINDOW);
-    ShowWindow(Window, SW_SHOW);
+
+    Win32ToggleWindowVisablity(Window, 0);
+    State->IsModeInitialized = true; 
+}
+
+internal void
+Win32InitializeTypeMode(HWND Window, state *State)
+{
+
+    Win32ToggleWindowVisablity(Window, 1);
+    State->IsModeInitialized = true; 
 }
 
 int CALLBACK
@@ -380,12 +402,15 @@ WinMain(HINSTANCE Instance,
 
             StartUp(&State, Config, Commands, ScreenWidth, ScreenHeight);
 
-			// NOTE(barret): setting up the client area of the window 
+            // NOTE(barret): setting up the client area of the window 
             Win32MoveWindow(Window, 0.0f, State.ScreenDim.Y*0.70f, State.ScreenDim.X, State.ScreenDim.Y*0.25f); 
             win32_window_dimension WindowDim = Win32GetWindowDimension(Window);
-			State.ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
-			Win32ResizeDIBSection(&GlobalBackbuffer, State.ClientDim.X, State.ClientDim.Y);
-			
+            State.ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
+            Win32ResizeDIBSection(&GlobalBackbuffer, State.ClientDim.X, State.ClientDim.Y);
+
+            Win32ToggleWindowVisablity(Window, 0);
+            
+            
             while(GlobalRunning)
             {
                 NewInput->dtForFrame = TargetSecondsPerFrame;
@@ -564,11 +589,17 @@ WinMain(HINSTANCE Instance,
 
                 if(State.Mode == DEFAULT)
                 {
+                    if(State.IsModeInitialized = 0)
+                        Win32InitializeDefaultMode(Window, &State);
+                    
                     Win32RunDefaultSims(Commands);
                 }
 
                 if(State.Mode == TYPE)
                 {
+                    if(State.IsModeInitialized = 0)
+                        Win32InitializeTypeMode(Window, &State);
+                    
                     if(State.CharToType != 0)
                         Win32RunTypeSims(State.CharToType);
 
@@ -577,12 +608,7 @@ WinMain(HINSTANCE Instance,
                 
                 if(State.Mode == MENU)
                 {
-                    if(State.ModeData == 1)
-                    {
-                        Win32InitializeMenu(Window);
-                        State.ModeData = 0;
-                    }
-
+    
                     
                 }
 

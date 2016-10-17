@@ -175,13 +175,13 @@ enum mode
 struct state
 {
     mode Mode;
-    int32 ModeData;
+    bool32 IsModeInitialized;
     char CharToType; 
     controller_config Config;
     commands Commands;
 
     v2 ScreenDim; 
-	v2 ClientDim; 
+    v2 ClientDim; 
 
     loaded_bitmap AButton;
     loaded_bitmap BButton;

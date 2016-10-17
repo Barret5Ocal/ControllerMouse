@@ -407,7 +407,7 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
                 if(Controller->Start.EndedDown && Controller->Start.HalfTransitionCount == 1)
                 {
                     State->Mode = TYPE;
-                    //State->ModeData = 1;
+                    State->IsModeInitialized = false; 
                     break;
                 }
                 
@@ -485,7 +485,8 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
                 if(Controller->Start.EndedDown && Controller->Start.HalfTransitionCount == 1)
                 {
                     State->Mode = DEFAULT;
-                    //State->ModeData = 1;                     
+                    State->IsModeInitialized = false; 
+                    break;                  
                 }
             }
             else if(State->Mode == MENU)
