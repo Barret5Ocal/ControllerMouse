@@ -589,7 +589,7 @@ WinMain(HINSTANCE Instance,
 
                 if(State.Mode == DEFAULT)
                 {
-                    if(State.IsModeInitialized = 0)
+                    if(State.IsModeInitialized == 0)
                         Win32InitializeDefaultMode(Window, &State);
                     
                     Win32RunDefaultSims(Commands);
@@ -597,7 +597,7 @@ WinMain(HINSTANCE Instance,
 
                 if(State.Mode == TYPE)
                 {
-                    if(State.IsModeInitialized = 0)
+                    if(State.IsModeInitialized == 0)
                         Win32InitializeTypeMode(Window, &State);
                     
                     if(State.CharToType != 0)
