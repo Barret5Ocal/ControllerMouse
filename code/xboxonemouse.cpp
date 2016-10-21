@@ -271,22 +271,22 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
     int32 MaxX = Basis.Origin.X + Bitmap->Width;
     int32 MaxY = Basis.Origin.Y + Bitmap->Height;
     
-    uint8 *SourceRow = (uint8 *)Buffer->Memory;
-    uint8 *DestRow = (uint8 *)Bitmap->Memory;
+    uint8 *SourceRow = (uint8 *)Bitmap->Memory;
+    uint8 *DestRow = (uint8 *)Buffer->Memory;
     for (int32 Y = 0;
          Y < Buffer->Height;
          ++Y)
     {
-        uint32 *Source = (uint32 *) SourceRow;
-        
+        uint32 *Dest = (uint32 *) DestRow; 
+        uint32 *Source = (uint32 *) SourceRow;        
         for(int32 X = 0;
             X < Buffer->Width;
             ++X)
         {
             if(Y >= MinY && X >= MinX && Y < MaxY && X < MaxX)
             {
-                uint32 *Dest = (uint32 *) DestRow; 
-
+                
+                
                 real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
                 real32 SB = (real32)((*Source >> 16) & 0xFF);
                 real32 SG = (real32)((*Source >> 8) & 0xFF);
@@ -303,17 +303,20 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
                 *Dest = (((uint32)(R + 0.5f) << 16) |
                          ((uint32)(G + 0.5f) << 8) |
                          ((uint32)(B + 0.5f) << 0));
-                ++Dest;
-
+                
+                ++Source;
             }
-            ++Source; 
+            ++Dest;
+             
         }
-        
-        SourceRow += Bitmap->Pitch;
+
         if(Y >= MinY && Y < MaxY)
         {
-            DestRow += Buffer->Pitch;
+            SourceRow += Bitmap->Pitch;
+                    
         }
+        DestRow += Buffer->Pitch;
+        
     }
 }
 
@@ -543,6 +546,25 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
                     State->IsModeInitialized = false; 
                     break;                  
                 }
+                
+                // TODO(barret): draw interface for type mode 
+                DrawRectangle(Buffer, v2{0, 0}, v2{(real32)Buffer->Width, (real32)Buffer->Height},
+                              1.0f, 1.0f, 1.0f);
+
+                DrawBitmap(Buffer, &State->AButton, 100, 100);
+                DrawBitmap(Buffer, &State->BButton, 200, 100);
+                DrawBitmap(Buffer, &State->XButton, 300, 100);
+                DrawBitmap(Buffer, &State->YButton, 400, 100);
+                DrawBitmap(Buffer, &State->StickUp, 500, 100);
+
+#if 1
+                // NOTE(barret): Testing render stuff
+                render_basis Basis = {};
+                Basis.Origin = v2{600, 100};
+                Basis.IHat = v2{1, 0};
+                Basis.JHat = v2{0, 1};
+                DrawBitmapSlowly(Buffer, &State->AButton, Basis);
+#endif 
             }
             else if(State->Mode == MENU)
             {
@@ -551,22 +573,5 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
         }    
     }
 
-    // TODO(barret): draw interface for type mode 
-    DrawRectangle(Buffer, v2{0, 0}, v2{(real32)Buffer->Width, (real32)Buffer->Height},
-                  1.0f, 1.0f, 1.0f);
 
-    DrawBitmap(Buffer, &State->AButton, 100, 100);
-    DrawBitmap(Buffer, &State->BButton, 200, 100);
-    DrawBitmap(Buffer, &State->XButton, 300, 100);
-    DrawBitmap(Buffer, &State->YButton, 400, 100);
-    DrawBitmap(Buffer, &State->StickUp, 500, 100);
-
-#if 0
-    // NOTE(barret): Testing render stuff
-    render_basis Basis = {};
-    Basis.Origin = v2{600, 100};
-    Basis.IHat = v2{1, 0};
-    Basis.JHat = v2{0, 1};
-    DrawBitmapSlowly(Buffer, &State->AButton, Basis);
-#endif 
 }
