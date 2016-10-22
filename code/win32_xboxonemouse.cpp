@@ -353,7 +353,7 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExA(
-                WS_EX_TOPMOST,//|WS_EX_LAYERED, //|WS_EX_TRANSPARENT,
+                0, //WS_EX_TOPMOST,//|WS_EX_LAYERED, //|WS_EX_TRANSPARENT,
                 WindowClass.lpszClassName,
                 "XboxOneMouse",
                 WS_OVERLAPPEDWINDOW|WS_VISIBLE,
@@ -385,9 +385,10 @@ WinMain(HINSTANCE Instance,
             game_input *NewInput = &Input[0];
             game_input *OldInput = &Input[1];
 
-            state State = {};
-            commands *Commands = &State.Commands;
-            controller_config *Config = &State.Config;
+            state *State = (state *)malloc(sizeof(state));
+            *State = {};
+            commands *Commands = &State->Commands;
+            controller_config *Config = &State->Config;
 
             // NOTE(barret): Get screen width and height
             HDC DC = GetDC(Window);
@@ -400,13 +401,13 @@ WinMain(HINSTANCE Instance,
 
             uint64 LastCycleCount = __rdtsc();
 
-            StartUp(&State, Config, Commands, ScreenWidth, ScreenHeight);
+            StartUp(State, Config, Commands, ScreenWidth, ScreenHeight);
 
             // NOTE(barret): setting up the client area of the window 
-            Win32MoveWindow(Window, 0.0f, State.ScreenDim.Y*0.70f, State.ScreenDim.X, State.ScreenDim.Y*0.25f); 
+            Win32MoveWindow(Window, 0.0f, State->ScreenDim.Y*0.70f, State->ScreenDim.X, State->ScreenDim.Y*0.25f); 
             win32_window_dimension WindowDim = Win32GetWindowDimension(Window);
-            State.ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
-            Win32ResizeDIBSection(&GlobalBackbuffer, State.ClientDim.X, State.ClientDim.Y);
+            State->ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
+            Win32ResizeDIBSection(&GlobalBackbuffer, State->ClientDim.X, State->ClientDim.Y);
 
             Win32ToggleWindowVisablity(Window, 0);
             
@@ -582,31 +583,31 @@ WinMain(HINSTANCE Instance,
 
                 v2 MousePos = {(real32)Point.x, (real32)Point.y};
                 
-                Update(&State, Config, NewInput, MousePos, &Buffer);
+                Update(State, Config, NewInput, MousePos, &Buffer);
                 
                 SetCursorPos(Commands->MousePos.X, Commands->MousePos.Y);
                 GetCursorPos(&Point);
 
-                if(State.Mode == DEFAULT)
+                if(State->Mode == DEFAULT)
                 {
-                    if(State.IsModeInitialized == 0)
-                        Win32InitializeDefaultMode(Window, &State);
+                    if(State->IsModeInitialized == 0)
+                        Win32InitializeDefaultMode(Window, State);
                     
                     Win32RunDefaultSims(Commands);
                 }
 
-                if(State.Mode == TYPE)
+                if(State->Mode == TYPE)
                 {
-                    if(State.IsModeInitialized == 0)
-                        Win32InitializeTypeMode(Window, &State);
+                    if(State->IsModeInitialized == 0)
+                        Win32InitializeTypeMode(Window, State);
                     
-                    if(State.CharToType != 0)
-                        Win32RunTypeSims(State.CharToType);
+                    if(State->CharToType != 0)
+                        Win32RunTypeSims(State->CharToType);
 
-                    State.CharToType = 0;
+                    State->CharToType = 0;
                 }
                 
-                if(State.Mode == MENU)
+                if(State->Mode == MENU)
                 {
     
                     

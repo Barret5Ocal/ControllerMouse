@@ -185,6 +185,7 @@ DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
     }
 }
 
+
 internal void
 DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, real32 RealY)
 {
@@ -266,27 +267,68 @@ internal void
 DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_basis Basis)
 {
 
-    int32 MinX = Basis.Origin.X;
-    int32 MinY = Basis.Origin.Y;
-    int32 MaxX = Basis.Origin.X + Bitmap->Width;
-    int32 MaxY = Basis.Origin.Y + Bitmap->Height;
+    v2 Min = Basis.Origin;
+    v2 Max = Basis.Origin + (Basis.IHat * Bitmap->Width) + (Basis.JHat * Bitmap->Height);
+
+    int32 WidthMax = Buffer->Width - 1;
+    int32 HeightMax = Buffer->Height - 1;
+    
+    int32 XMin = WidthMax;
+    int32 YMin = HeightMax;
+    int32 XMax = 0;
+    int32 YMax = 0;
+    
+    v2 P[4] = {Basis.Origin, Basis.Origin + (Basis.IHat * Bitmap->Width),
+               Basis.Origin + (Basis.JHat * Bitmap->Height),
+               Basis.Origin + (Basis.JHat * Bitmap->Height) + (Basis.IHat * Bitmap->Width)};
+
+    for(int32 PIndex = 0;
+        PIndex < ArrayCount(P);
+        ++PIndex)
+    {
+        v2 PTest = P[PIndex];
+        int32 FloorX = FloorReal32ToInt32(PTest.X);
+        int32 CeilX = CeilReal32ToInt32(PTest.X);
+        int32 FloorY = FloorReal32ToInt32(PTest.Y);
+        int32 CeilY = CeilReal32ToInt32(PTest.Y);
+
+        if(XMin > FloorX) {XMin = FloorX;}
+        if(YMin > FloorY) {YMin = FloorY;}
+        if(XMax < CeilX) {XMax = CeilX;}
+        if(YMax < CeilY) {YMax = CeilY;}
+    }
+
+    if(XMin < 0){XMin = 0;}
+    if(YMin < 0){YMin = 0;}
+    if(XMax > WidthMax){XMax = WidthMax;}
+    if(YMax > HeightMax){YMax = HeightMax;}
     
     uint8 *SourceRow = (uint8 *)Bitmap->Memory;
-    uint8 *DestRow = (uint8 *)Buffer->Memory;
-    for (int32 Y = 0;
-         Y < Buffer->Height;
+    uint8 *DestRow = (uint8 *)Buffer->Memory +
+        XMin*BITMAP_BYTES_PER_PIXEL +
+        YMin*Buffer->Pitch;
+    for (int32 Y = YMin;
+         Y < YMax;
          ++Y)
     {
         uint32 *Dest = (uint32 *) DestRow; 
         uint32 *Source = (uint32 *) SourceRow;        
-        for(int32 X = 0;
-            X < Buffer->Width;
+        for(int32 X = XMin;
+            X < XMax;
             ++X)
         {
-            if(Y >= MinY && X >= MinX && Y < MaxY && X < MaxX)
+
+            v2 PixelP = V2i(X, Y);
+            real32 Edge0 = Inner((PixelP - Basis.Origin), -(Basis.JHat*Bitmap->Height));
+            real32 Edge1 = Inner((PixelP - (Basis.Origin + (Basis.IHat*Bitmap->Width))), Basis.IHat*Bitmap->Width);
+            real32 Edge2 = Inner((PixelP - (Basis.Origin + (Basis.IHat*Bitmap->Width) + (Basis.JHat*Bitmap->Height))), Basis.JHat*Bitmap->Height); 
+            real32 Edge3 = Inner((PixelP - (Basis.Origin + (Basis.JHat*Bitmap->Height))), -(Basis.IHat*Bitmap->Width));
+
+            if((Edge0 < 0) &&
+               (Edge1 < 0) &&
+               (Edge2 < 0) &&
+               (Edge3 < 0))
             {
-                
-                
                 real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
                 real32 SB = (real32)((*Source >> 16) & 0xFF);
                 real32 SG = (real32)((*Source >> 8) & 0xFF);
@@ -310,7 +352,7 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
              
         }
 
-        if(Y >= MinY && Y < MaxY)
+        if(Y >= Min.Y && Y < Max.Y)
         {
             SourceRow += Bitmap->Pitch;
                     

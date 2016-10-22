@@ -18,6 +18,27 @@ union v2
     real32 E[2];
 };
 
+inline v2
+V2(real32 X, real32 Y)
+{
+    v2 Result = {};
+
+    Result.X = X;
+    Result.Y = Y;
+
+    return(Result);
+}
+
+inline v2
+V2i(int32 X, int32 Y)
+{
+    v2 Result = {};
+
+    Result.X = (real32)X;
+    Result.Y = (real32)Y;
+
+    return(Result);
+}
 
 inline v2
 operator+(v2 A, v2 B)
