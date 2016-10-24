@@ -140,6 +140,13 @@ Square(real32 A)
     return(Result);
 }
 
+inline v2
+Perp(v2 A)
+{
+    v2 Result = {-A.Y, A.X};
+    return(Result);
+}
+
 inline real32
 Inner(v2 A, v2 B)
 {

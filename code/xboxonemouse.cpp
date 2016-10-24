@@ -277,6 +277,12 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
     int32 YMin = HeightMax;
     int32 XMax = 0;
     int32 YMax = 0;
+
+    v2 FullXAxis = Basis.IHat * Bitmap->Width;
+    v2 FullYAxis = Basis.JHat * Bitmap->Height;
+
+    real32 InvFullXAxisLengthSqu = 1.0f / LengthSq(FullXAxis);
+    real32 InvFullYAxisLengthSqu = 1.0f / LengthSq(FullYAxis);
     
     v2 P[4] = {Basis.Origin, Basis.Origin + (Basis.IHat * Bitmap->Width),
                Basis.Origin + (Basis.JHat * Bitmap->Height),
@@ -317,22 +323,41 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
             X < XMax;
             ++X)
         {
-
             v2 PixelP = V2i(X, Y);
-            real32 Edge0 = Inner((PixelP - Basis.Origin), -(Basis.JHat*Bitmap->Height));
-            real32 Edge1 = Inner((PixelP - (Basis.Origin + (Basis.IHat*Bitmap->Width))), Basis.IHat*Bitmap->Width);
-            real32 Edge2 = Inner((PixelP - (Basis.Origin + (Basis.IHat*Bitmap->Width) + (Basis.JHat*Bitmap->Height))), Basis.JHat*Bitmap->Height); 
-            real32 Edge3 = Inner((PixelP - (Basis.Origin + (Basis.JHat*Bitmap->Height))), -(Basis.IHat*Bitmap->Width));
+            v2 d = PixelP - Basis.Origin;
+
+            
+            real32 Edge0 = Inner(d, -Perp(FullXAxis));
+            real32 Edge1 = Inner(d + (Basis.IHat*Bitmap->Width), Perp(FullYAxis));
+            real32 Edge2 = Inner((d + (Basis.IHat*Bitmap->Width) + (Basis.JHat*Bitmap->Height)), Perp(FullXAxis)); 
+            real32 Edge3 = Inner((d + (Basis.JHat*Bitmap->Height)), -Perp(FullYAxis));
 
             if((Edge0 < 0) &&
                (Edge1 < 0) &&
                (Edge2 < 0) &&
                (Edge3 < 0))
             {
-                real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
-                real32 SB = (real32)((*Source >> 16) & 0xFF);
-                real32 SG = (real32)((*Source >> 8) & 0xFF);
-                real32 SR = (real32)((*Source >> 0) & 0xFF);
+                real32 U = InvFullXAxisLengthSqu*Inner(d, FullXAxis);
+                real32 V = InvFullYAxisLengthSqu*Inner(d, FullYAxis);
+
+                Assert((U >= 0.0f) && (U <= 1.0f));
+                Assert((V >= 0.0f) && (V <= 1.0f));
+                
+                int32 X = (int32)((U * (real32)(Bitmap->Width - 1)) + 0.5f);
+                int32 Y = (int32)((V * (real32)(Bitmap->Height - 1)) + 0.5f);
+
+                Assert((X > 0.0f) && (X < Bitmap->Width));
+                Assert((Y > 0.0f) && (Y < Bitmap->Height));
+                
+                uint8 *TexelPtr = ((uint8 *)Bitmap->Memory) + Y*Bitmap->Pitch + X*sizeof(uint32);
+                uint32 Texel = *(uint32 *)TexelPtr; 
+                
+                *Dest = Texel;
+#if 0
+                real32 A = (real32)((*Color32 >> 24) & 0xFF) / 255.0f;  
+                real32 SB = (real32)((*Color32 >> 16) & 0xFF);
+                real32 SG = (real32)((*Color32 >> 8) & 0xFF);
+                real32 SR = (real32)((*Color32 >> 0) & 0xFF);
 
                 real32 DR = (real32)((*Dest >> 16) & 0xFF);
                 real32 DG = (real32)((*Dest >> 8) & 0xFF);
@@ -345,7 +370,7 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_ba
                 *Dest = (((uint32)(R + 0.5f) << 16) |
                          ((uint32)(G + 0.5f) << 8) |
                          ((uint32)(B + 0.5f) << 0));
-                
+#endif                
                 ++Source;
             }
             ++Dest;
