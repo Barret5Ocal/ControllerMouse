@@ -264,127 +264,10 @@ DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, r
 }
 
 internal void
-DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, render_basis Basis)
+DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Texture, v2 Origin, v2 XAxis, v2 YAxis,
+                 v4 Color)
 {
 
-    v2 Min = Basis.Origin;
-    v2 Max = Basis.Origin + (Basis.IHat * Bitmap->Width) + (Basis.JHat * Bitmap->Height);
-
-    int32 WidthMax = Buffer->Width - 1;
-    int32 HeightMax = Buffer->Height - 1;
-    
-    int32 XMin = WidthMax;
-    int32 YMin = HeightMax;
-    int32 XMax = 0;
-    int32 YMax = 0;
-
-    v2 FullXAxis = Basis.IHat * Bitmap->Width;
-    v2 FullYAxis = Basis.JHat * Bitmap->Height;
-
-    real32 InvFullXAxisLengthSqu = 1.0f / LengthSq(FullXAxis);
-    real32 InvFullYAxisLengthSqu = 1.0f / LengthSq(FullYAxis);
-    
-    v2 P[4] = {Basis.Origin, Basis.Origin + (Basis.IHat * Bitmap->Width),
-               Basis.Origin + (Basis.JHat * Bitmap->Height),
-               Basis.Origin + (Basis.JHat * Bitmap->Height) + (Basis.IHat * Bitmap->Width)};
-
-    for(int32 PIndex = 0;
-        PIndex < ArrayCount(P);
-        ++PIndex)
-    {
-        v2 PTest = P[PIndex];
-        int32 FloorX = FloorReal32ToInt32(PTest.X);
-        int32 CeilX = CeilReal32ToInt32(PTest.X);
-        int32 FloorY = FloorReal32ToInt32(PTest.Y);
-        int32 CeilY = CeilReal32ToInt32(PTest.Y);
-
-        if(XMin > FloorX) {XMin = FloorX;}
-        if(YMin > FloorY) {YMin = FloorY;}
-        if(XMax < CeilX) {XMax = CeilX;}
-        if(YMax < CeilY) {YMax = CeilY;}
-    }
-
-    if(XMin < 0){XMin = 0;}
-    if(YMin < 0){YMin = 0;}
-    if(XMax > WidthMax){XMax = WidthMax;}
-    if(YMax > HeightMax){YMax = HeightMax;}
-    
-    uint8 *SourceRow = (uint8 *)Bitmap->Memory;
-    uint8 *DestRow = (uint8 *)Buffer->Memory +
-        XMin*BITMAP_BYTES_PER_PIXEL +
-        YMin*Buffer->Pitch;
-    for (int32 Y = YMin;
-         Y < YMax;
-         ++Y)
-    {
-        uint32 *Dest = (uint32 *) DestRow; 
-        uint32 *Source = (uint32 *) SourceRow;        
-        for(int32 X = XMin;
-            X < XMax;
-            ++X)
-        {
-            v2 PixelP = V2i(X, Y);
-            v2 d = PixelP - Basis.Origin;
-
-            
-            real32 Edge0 = Inner(d, -Perp(FullXAxis));
-            real32 Edge1 = Inner(d + (Basis.IHat*Bitmap->Width), Perp(FullYAxis));
-            real32 Edge2 = Inner((d + (Basis.IHat*Bitmap->Width) + (Basis.JHat*Bitmap->Height)), Perp(FullXAxis)); 
-            real32 Edge3 = Inner((d + (Basis.JHat*Bitmap->Height)), -Perp(FullYAxis));
-
-            if((Edge0 < 0) &&
-               (Edge1 < 0) &&
-               (Edge2 < 0) &&
-               (Edge3 < 0))
-            {
-                real32 U = InvFullXAxisLengthSqu*Inner(d, FullXAxis);
-                real32 V = InvFullYAxisLengthSqu*Inner(d, FullYAxis);
-
-                Assert((U >= 0.0f) && (U <= 1.0f));
-                Assert((V >= 0.0f) && (V <= 1.0f));
-                
-                int32 X = (int32)((U * (real32)(Bitmap->Width - 1)) + 0.5f);
-                int32 Y = (int32)((V * (real32)(Bitmap->Height - 1)) + 0.5f);
-
-                Assert((X > 0.0f) && (X < Bitmap->Width));
-                Assert((Y > 0.0f) && (Y < Bitmap->Height));
-                
-                uint8 *TexelPtr = ((uint8 *)Bitmap->Memory) + Y*Bitmap->Pitch + X*sizeof(uint32);
-                uint32 Texel = *(uint32 *)TexelPtr; 
-                
-                *Dest = Texel;
-#if 0
-                real32 A = (real32)((*Color32 >> 24) & 0xFF) / 255.0f;  
-                real32 SB = (real32)((*Color32 >> 16) & 0xFF);
-                real32 SG = (real32)((*Color32 >> 8) & 0xFF);
-                real32 SR = (real32)((*Color32 >> 0) & 0xFF);
-
-                real32 DR = (real32)((*Dest >> 16) & 0xFF);
-                real32 DG = (real32)((*Dest >> 8) & 0xFF);
-                real32 DB = (real32)((*Dest >> 0) & 0xFF);
-
-                real32 R = (1.0f - A)*DR + A*SR;
-                real32 G = (1.0f - A)*DG + A*SG;
-                real32 B = (1.0f - A)*DB + A*SB;
-            
-                *Dest = (((uint32)(R + 0.5f) << 16) |
-                         ((uint32)(G + 0.5f) << 8) |
-                         ((uint32)(B + 0.5f) << 0));
-#endif                
-                ++Source;
-            }
-            ++Dest;
-             
-        }
-
-        if(Y >= Min.Y && Y < Max.Y)
-        {
-            SourceRow += Bitmap->Pitch;
-                    
-        }
-        DestRow += Buffer->Pitch;
-        
-    }
 }
 
 internal void
@@ -625,12 +508,17 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
                 DrawBitmap(Buffer, &State->StickUp, 500, 100);
 
 #if 1
+                State->Time += Input->dtForFrame;
+                real32 Angle = 0.1f*State->Time;
+                real32 Disp = 100.0f*Cos(5.0f*Angle);
                 // NOTE(barret): Testing render stuff
-                render_basis Basis = {};
-                Basis.Origin = v2{600, 100};
-                Basis.IHat = v2{1, 0};
-                Basis.JHat = v2{0, 1};
-                DrawBitmapSlowly(Buffer, &State->AButton, Basis);
+                
+                v2 Origin = v2{600, 100};
+                v2 XAxis = 100.0f*V2(Cos(Angle), Sin(Angle));
+                v2 YAxis = Perp(XAxis);
+                v4 Color = {0.5f+0.5f*Sin(Angle), 0.5f+0.5f*Sin(2.9f*Angle), 0.5f+0.5f*Cos(9.9f*Angle), 1};
+                DrawBitmapSlowly(Buffer, &State->AButton, Origin, XAxis, YAxis,
+                                 Color);
 #endif 
             }
             else if(State->Mode == MENU)

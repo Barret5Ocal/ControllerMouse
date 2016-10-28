@@ -143,6 +143,8 @@ struct state
     v2 ScreenDim; 
     v2 ClientDim; 
 
+    real32 Time; 
+    
     loaded_bitmap AButton;
     loaded_bitmap BButton;
     loaded_bitmap XButton;

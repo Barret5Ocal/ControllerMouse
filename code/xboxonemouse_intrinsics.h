@@ -44,4 +44,25 @@ CeilReal32ToInt32(real32 A)
     return(Result);
 }
 
+inline real32
+Sin(real32 Angle)
+{
+    real32 Result = sinf(Angle);
+    return(Result);
+}
+
+inline real32
+Cos(real32 Angle)
+{
+    real32 Result = cosf(Angle);
+    return(Result);
+}
+
+inline real32
+ATan2(real32 Y, real32 X)
+{
+    real32 Result = atan2f(Y, X);
+    return(Result);
+}
+
 #endif
