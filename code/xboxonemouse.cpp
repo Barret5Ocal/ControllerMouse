@@ -267,7 +267,66 @@ internal void
 DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Texture, v2 Origin, v2 XAxis, v2 YAxis,
                  v4 Color)
 {
+    uint32 Color32 = ((RoundReal32ToUInt32(Color.a * 255.0f) << 24) |
+                      (RoundReal32ToUInt32(Color.r * 255.0f) << 16) |
+                      (RoundReal32ToUInt32(Color.g * 255.0f) << 8) |
+                      (RoundReal32ToUInt32(Color.b * 255.0f) << 0));
+    
+    int32 MinX = Buffer->Width;
+    int32 MinY = Buffer->Height;
+    int32 MaxX = 0;
+    int32 MaxY = 0;
 
+    v2 P[4] = {Origin, Origin + XAxis, Origin + YAxis, Origin + XAxis + YAxis};
+    for(int32 PIndex = 0;
+        PIndex < ArrayCount(P);
+        ++PIndex)
+    {
+        v2 PTest = P[PIndex];
+        int32 Test0 = FloorReal32ToInt32(PTest.X);
+        int32 Test1 = FloorReal32ToInt32(PTest.Y);
+        int32 Test2 = CeilReal32ToInt32(PTest.X);
+        int32 Test3 = CeilReal32ToInt32(PTest.Y);
+
+        if(Test0 < MinX){MinX = Test0;}
+        if(Test1 < MinY){MinY = Test1;}
+        if(Test2 > MaxX){MaxX = Test2;}
+        if(Test3 > MaxY){MaxY = Test3;}
+    }
+
+
+    uint8 *Dest = (uint8 *)Buffer->Memory + MinY*Buffer->Pitch + MinX*BITMAP_BYTES_PER_PIXEL;
+    for (int32 Y = MinY;
+         Y < MaxY;
+         ++Y)
+    {
+        uint32 *Pixel = (uint32 *)Dest; 
+        for (int32 X = MinX;
+             X < MaxX;
+             ++X)
+        {
+            v2 P = {(real32)X, (real32)Y};
+            v2 V = P - Origin;
+            v2 Max = {Origin + XAxis + YAxis};
+            v2 V2 = P - Max;
+
+            int32 Edge0 = Inner(V, XAxis);
+            int32 Edge1 = Inner(V, YAxis);
+            int32 Edge2 = Inner(V2, (Origin - XAxis) - Max);
+            int32 Edge3 = Inner(V2, (Origin - YAxis) - Max);
+
+            if(Edge0 > 0 &&
+               Edge1 > 0 &&
+               Edge2 > 0 &&
+               Edge3 > 0)
+            {
+                *Pixel++ = Color32;
+            }
+            
+        }
+
+        Pixel += Buffer->Pitch; 
+    }
 }
 
 internal void
