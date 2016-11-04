@@ -187,7 +187,8 @@ DrawRectangle(game_offscreen_buffer *Buffer, v2 Min, v2 Max,
 
 
 internal void
-DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, real32 RealY)
+DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap,
+           real32 RealX, real32 RealY, real32 CAlpha = 1.0f)
 {
     //TODO(barret): fill out
 
@@ -237,20 +238,27 @@ DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, real32 RealX, r
             X < MaxX;
             ++X)
         {
-            real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;  
-            real32 SB = (real32)((*Source >> 16) & 0xFF);
-            real32 SG = (real32)((*Source >> 8) & 0xFF);
-            real32 SR = (real32)((*Source >> 0) & 0xFF);
+            
+            real32 SA = (real32)((*Source >> 24) & 0xFF);
+            real32 RSA = (SA/255.0f)*CAlpha;            
+            real32 SB = CAlpha*(real32)((*Source >> 16) & 0xFF);
+            real32 SG = CAlpha*(real32)((*Source >> 8) & 0xFF);
+            real32 SR = CAlpha*(real32)((*Source >> 0) & 0xFF);
 
+            real32 DA = (real32)((*Dest >> 24) & 0xFF);
             real32 DR = (real32)((*Dest >> 16) & 0xFF);
             real32 DG = (real32)((*Dest >> 8) & 0xFF);
             real32 DB = (real32)((*Dest >> 0) & 0xFF);
-
-            real32 R = (1.0f - A)*DR + A*SR;
-            real32 G = (1.0f - A)*DG + A*SG;
-            real32 B = (1.0f - A)*DB + A*SB;
+            real32 RDA = (DA / 255.0f);
             
-            *Dest = (((uint32)(R + 0.5f) << 16) |
+            real32 InvRSA = (1.0f - RSA);
+            real32 A = 255.0f*(RSA + RDA - RSA*RDA); 
+            real32 R = InvRSA*DR + SR;
+            real32 G = InvRSA*DG + SG;
+            real32 B = InvRSA*DB + SB;
+            
+            *Dest = (((uint32)(A + 0.5f) << 24) |
+                     ((uint32)(R + 0.5f) << 16) |
                      ((uint32)(G + 0.5f) << 8) |
                      ((uint32)(B + 0.5f) << 0)); 
 
@@ -267,6 +275,9 @@ internal void
 DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Texture, v2 Origin, v2 XAxis, v2 YAxis,
                  v4 Color)
 {
+    real32 InvXAxisLengthSq = 1.0f / LengthSq(XAxis);
+    real32 InvYAxisLengthSq = 1.0f / LengthSq(YAxis);
+    
     uint32 Color32 = ((RoundReal32ToUInt32(Color.a * 255.0f) << 24) |
                       (RoundReal32ToUInt32(Color.r * 255.0f) << 16) |
                       (RoundReal32ToUInt32(Color.g * 255.0f) << 8) |
@@ -295,37 +306,48 @@ DrawBitmapSlowly(game_offscreen_buffer *Buffer, loaded_bitmap *Texture, v2 Origi
     }
 
 
-    uint8 *Dest = (uint8 *)Buffer->Memory + MinY*Buffer->Pitch + MinX*BITMAP_BYTES_PER_PIXEL;
+    uint8 *DestRow = (uint8 *)Buffer->Memory + MinY*Buffer->Pitch + MinX*BITMAP_BYTES_PER_PIXEL;
+    uint8 *SourceRow = (uint8 *)Texture->Memory; 
     for (int32 Y = MinY;
          Y < MaxY;
          ++Y)
     {
-        uint32 *Pixel = (uint32 *)Dest; 
+        uint32 *Dest = (uint32 *)DestRow;
         for (int32 X = MinX;
              X < MaxX;
              ++X)
         {
-            v2 P = {(real32)X, (real32)Y};
-            v2 V = P - Origin;
-            v2 Max = {Origin + XAxis + YAxis};
-            v2 V2 = P - Max;
-
-            int32 Edge0 = Inner(V, XAxis);
-            int32 Edge1 = Inner(V, YAxis);
-            int32 Edge2 = Inner(V2, (Origin - XAxis) - Max);
-            int32 Edge3 = Inner(V2, (Origin - YAxis) - Max);
-
-            if(Edge0 > 0 &&
-               Edge1 > 0 &&
-               Edge2 > 0 &&
-               Edge3 > 0)
-            {
-                *Pixel++ = Color32;
-            }
+            v2 P = V2i(X, Y);
+            v2 d = P - Origin;
             
+            real32 Edge0 = Inner(P - Origin, -Perp(XAxis));
+            real32 Edge1 = Inner(P - (Origin + XAxis), -Perp(YAxis));
+            real32 Edge2 = Inner(P - (Origin + XAxis + YAxis), Perp(XAxis));
+            real32 Edge3 = Inner(P - (Origin + YAxis), Perp(YAxis));
+                
+            if((Edge0 < 0) &&
+               (Edge1 < 0) &&
+               (Edge2 < 0) &&
+               (Edge3 < 0))
+            {
+
+                real32 U = InvXAxisLengthSq*Inner(d, XAxis);
+                real32 V = InvXAxisLengthSq*Inner(d, YAxis);
+
+                int32 X = (int32)((U*(real32)(Texture->Width - 1)) + 0.5f);
+                int32 Y = (int32)((V*(real32)(Texture->Height - 1)) + 0.5f);
+
+                uint8 *TexelPtr = ((uint8 *)Texture->Memory) + Y*Texture->Pitch + X*sizeof(uint32);
+                uint32 Texel = *(uint32 *)TexelPtr; 
+
+                *Dest = Texel;
+
+            }
+
+            ++Dest;
         }
 
-        Pixel += Buffer->Pitch; 
+        DestRow += Buffer->Pitch; 
     }
 }
 
@@ -572,12 +594,24 @@ Update(state *State, controller_config *Config, game_input *Input, v2 MousePos,
                 real32 Disp = 100.0f*Cos(5.0f*Angle);
                 // NOTE(barret): Testing render stuff
                 
-                v2 Origin = v2{600, 100};
+                v2 Origin = v2{600, 300};
                 v2 XAxis = 100.0f*V2(Cos(Angle), Sin(Angle));
                 v2 YAxis = Perp(XAxis);
                 v4 Color = {0.5f+0.5f*Sin(Angle), 0.5f+0.5f*Sin(2.9f*Angle), 0.5f+0.5f*Cos(9.9f*Angle), 1};
                 DrawBitmapSlowly(Buffer, &State->AButton, Origin, XAxis, YAxis,
                                  Color);
+
+                v2 P[4] = {Origin, Origin + XAxis, Origin + YAxis, Origin + XAxis + YAxis};
+
+                for(int32 PIndex = 0;
+                    PIndex < ArrayCount(P);
+                    ++PIndex)
+                {
+                    v2 PDraw = P[PIndex];
+                    v2 PDrawMax = PDraw + v2{5,5};
+
+                    DrawRectangle(Buffer, PDraw, PDrawMax, 0, 1, 1);
+                }
 #endif 
             }
             else if(State->Mode == MENU)

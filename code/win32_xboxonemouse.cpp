@@ -404,14 +404,13 @@ WinMain(HINSTANCE Instance,
             StartUp(State, Config, Commands, ScreenWidth, ScreenHeight);
 
             // NOTE(barret): setting up the client area of the window 
-            Win32MoveWindow(Window, 0.0f, State->ScreenDim.Y*0.70f, State->ScreenDim.X, State->ScreenDim.Y*0.25f); 
+            //Win32MoveWindow(Window, 0.0f, State->ScreenDim.Y*0.70f, State->ScreenDim.X, State->ScreenDim.Y*0.25f); 
             win32_window_dimension WindowDim = Win32GetWindowDimension(Window);
             State->ClientDim = {(real32)WindowDim.Width, (real32)WindowDim.Height};
             Win32ResizeDIBSection(&GlobalBackbuffer, State->ClientDim.X, State->ClientDim.Y);
 
             Win32ToggleWindowVisablity(Window, 0);
-            
-            
+                        
             while(GlobalRunning)
             {
                 NewInput->dtForFrame = TargetSecondsPerFrame;

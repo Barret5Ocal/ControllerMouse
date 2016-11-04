@@ -18,6 +18,35 @@ STBLoadMap(char *Filename)
     int X,Y,N;
     unsigned char *Data = stbi_load(Filename, &X, &Y, &N, 4);
 
+    // TODO(barret): Pre-multiply the alpha
+    uint32 *SourceRow = (uint32 *)Data;
+    for(int32 Yi = 0;
+        Yi < Y;
+        ++Yi)
+    {
+        for(int32 Xi = 0;
+            Xi < X;
+            ++Xi)
+        {
+            uint32 C = *SourceRow;             
+            real32 A = (real32)((C >> 24) & 0xFF);  
+            real32 B = (real32)((C >> 16) & 0xFF);
+            real32 G = (real32)((C >> 8) & 0xFF);
+            real32 R = (real32)((C >> 0) & 0xFF);
+            real32 NA = (A / 255.0f);
+
+            B = B*NA;
+            G = G*NA;
+            R = R*NA;
+            
+            *SourceRow = (((uint32)(A + 0.5f) << 24) |
+                          ((uint32)(R + 0.5f) << 16) |
+                          ((uint32)(G + 0.5f) << 8) |
+                          ((uint32)(B + 0.5f) << 0)); 
+
+        }
+    }
+    
     Result.Width = X;
     Result.Height = Y;
     Result.Memory = Data; 

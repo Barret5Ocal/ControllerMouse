@@ -10,6 +10,9 @@
 #include "xboxonemouse_intrinsics.h"
 #include "xboxonemouse_math.h"
 
+#define Minimum(A, B) ((A < B) ? (A) : (B))
+#define Maximum(A, B) ((A > B) ? (A) : (B))
+
 #define BITMAP_BYTES_PER_PIXEL 4
 
 struct loaded_bitmap
